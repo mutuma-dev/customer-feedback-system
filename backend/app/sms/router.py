@@ -1,4 +1,4 @@
-"""HTTP endpoints for SMS (Spring: @RestController)."""
+"""HTTP endpoints for SMS"""
 
 from typing import Annotated
 

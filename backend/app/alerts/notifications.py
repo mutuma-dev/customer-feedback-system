@@ -17,7 +17,7 @@ log = logging.getLogger(__name__)
 
 
 def build_alert_email(customer: Customer, response: Response) -> str:
-    """Email body for the care rep. Contains the customer's name and email, as the brief asks."""
+    """Email body for the care rep. Contains the customer's name and email"""
     return (
         "A detractor needs a follow-up.\n\n"
         f"Customer: {customer.name}\nEmail: {customer.email or '-'}\n"

@@ -30,13 +30,11 @@ psql -U postgres -c "CREATE DATABASE feedback;"
 
 # 2. Virtual environment + libraries
 python3 -m venv .venv
-source .venv/bin/activate            # Windows PowerShell: .venv\Scripts\Activate.ps1
-pip install -r requirements.txt      # add -dev to also get pytest and ruff: requirements-dev.txt
+source .venv/bin/activate     
+pip install -r requirements.txt 
 
-# 3. Settings: the app reads ".env" (NOT .env.example). Edit DATABASE_URL in it.
-#    .env.example is only a template to copy from: cp .env.example .env
 
-# 4. Create the tables
+# 3. Create the tables
 alembic upgrade head
 
 

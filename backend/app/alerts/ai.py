@@ -1,7 +1,5 @@
 """AI touch: draft a polite follow-up for a detractor. Always fails gracefully.
-
-Works with ANY provider that offers the OpenAI "chat completions" format (Groq, Google Gemini,
-OpenRouter, ...). Switch provider by changing AI_BASE_URL, AI_MODEL and AI_API_KEY in `.env`.
+Works with ANY provider that offers the OpenAI "chat completions" read from env file
 """
 
 import logging
