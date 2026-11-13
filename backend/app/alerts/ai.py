@@ -1,13 +1,4 @@
 """AI touch: draft a polite follow-up email for an unhappy customer.
-
-Works with ANY provider that offers the OpenAI "chat completions" format (Groq, Google Gemini,
-OpenRouter ...). Switch provider by changing AI_BASE_URL, AI_MODEL and AI_API_KEY in `.env`.
-
-Rules from the brief that this file follows:
-  * the customer does nothing (this only runs when the care rep clicks "Write reply")
-  * a human stays in the loop (we only DRAFT; the rep edits and sends)
-  * it fails gracefully (any problem returns a template, never an error)
-  * the key stays on the server (called from Python, never from React)
 """
 
 import logging

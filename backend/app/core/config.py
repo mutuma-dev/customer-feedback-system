@@ -1,10 +1,4 @@
 """All application settings in ONE place.
-
-Spring equivalent: application.properties / @ConfigurationProperties.
-
-Each setting is read from an environment variable with the same name in CAPITALS
-(database_url <- DATABASE_URL). Values also come from the ".env" file in the folder you
-start the app from. If a variable is missing, the default after "=" is used.
 """
 
 from functools import lru_cache
@@ -23,11 +17,11 @@ class Settings(BaseSettings):
     frontend_origin: str = "http://localhost:3000"
 
     # ---- Who is told about unhappy customers ----
-    care_rep_email: str = "care@companyx.example"
+    care_rep_email: str = "mutumabrian393@gmail.com"
     care_rep_phone: str = ""  # empty = no SMS alert
 
     # ---- Email (SMTP) ----
-    smtp_host: str = ""  # empty = emails are only written to the log
+    smtp_host: str = "" 
     smtp_port: int = 587
     smtp_user: str = ""
     smtp_password: str = ""

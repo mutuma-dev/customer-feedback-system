@@ -1,6 +1,4 @@
 """Database plumbing: connection pool, sessions and the injectable DbSession.
-
-Spring equivalent: DataSource + EntityManager.
 """
 
 from collections.abc import Iterator

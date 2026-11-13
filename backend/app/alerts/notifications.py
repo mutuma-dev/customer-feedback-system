@@ -1,7 +1,4 @@
 """Alert delivery: email (SMTP) and SMS to the care rep when a detractor appears.
-
-WHEN does this run? Right after a detractor's feedback is saved (from the web form OR from an
-SMS reply). It runs as a background task, i.e. after the customer already got their answer.
 """
 
 import logging

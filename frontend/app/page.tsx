@@ -2,7 +2,6 @@
 
 // THE SURVEY (route "/"). What a paint buyer sees on their phone:
 //   questions 1-3 (one per screen) -> contact details -> thank-you screen.
-// There is deliberately NO link to the dashboard: customers and staff are different people.
 
 import { FormEvent, useEffect, useState } from "react";
 import { StarRating } from "@/components/Stars";

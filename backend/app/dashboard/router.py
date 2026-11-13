@@ -1,4 +1,4 @@
-"""Endpoints the dashboard calls (Spring: @RestController)."""
+"""Endpoints the dashboard calls"""
 
 from typing import Annotated
 

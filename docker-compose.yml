@@ -1,7 +1,4 @@
-# Optional: start the whole system in containers with one command:
 #     docker compose up --build
-# Then open  http://localhost:3000  (survey/dashboard)  and  http://localhost:8000/docs  (API).
-# You do NOT need this if you run the backend and frontend directly on your computer.
 
 services:
   # ---- 1. The database ----
@@ -12,7 +9,7 @@ services:
       POSTGRES_PASSWORD: postgres
       POSTGRES_DB: feedback
     ports:
-      # Left number = port on YOUR computer. 5433 avoids a clash with your own PostgreSQL (5432).
+      # 5433 avoids a clash with PostgreSQL (5432).
       - "5433:5432"
     volumes:
       - dbdata:/var/lib/postgresql/data # keeps the data when the container restarts
@@ -25,12 +22,10 @@ services:
   backend:
     build: ./backend # uses backend/Dockerfile
     environment:
-      # Inside Docker the database is reached by the service name "db", not "localhost".
-      # (These values win over anything in backend/.env.)
       DATABASE_URL: postgresql+psycopg://postgres:postgres@db:5432/feedback
       FRONTEND_ORIGIN: http://localhost:3000
     env_file:
-      - path: ./backend/.env # your Gmail / Groq / Africa's Talking settings, if the file exists
+      - path: ./backend/.env 
         required: false
     ports:
       - "8000:8000"
@@ -43,7 +38,7 @@ services:
     build:
       context: ./frontend # uses frontend/Dockerfile
       args:
-        # The browser (on your computer) calls the backend on localhost:8000.
+        # backend on localhost:8000.
         NEXT_PUBLIC_API_URL: http://localhost:8000
     ports:
       - "3000:3000"
