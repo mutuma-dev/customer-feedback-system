@@ -18,7 +18,7 @@ class Settings(BaseSettings):
     frontend_origin: str = "http://localhost:3000"
 
     # Who gets told about unhappy customers.
-    care_rep_email: str = "care@companyx.example"
+    care_rep_email: str = "mutumabrian393@gmail.com"
     care_rep_phone: str = ""
 
     # Email (SMTP)
