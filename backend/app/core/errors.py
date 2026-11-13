@@ -1,4 +1,4 @@
-
+"""A shared "not found" error that becomes an HTTP 404 (Spring: @ControllerAdvice)."""
 
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse

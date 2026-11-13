@@ -45,6 +45,7 @@ def test_successful_ai_call_is_used(monkeypatch):
     assert (draft, used) == ("Dear Amina, sorry!", True)  # whitespace is trimmed
     assert seen["url"].endswith("/chat/completions")
     assert seen["headers"]["Authorization"] == "Bearer test-key"
+    assert seen["json"]["max_tokens"] >= 1000  # enough room for reasoning models
     # Privacy: only the first name and ratings are sent, never the surname.
     prompt = seen["json"]["messages"][1]["content"]
     assert "Amina" in prompt and "Otieno" not in prompt

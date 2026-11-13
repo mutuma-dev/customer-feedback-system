@@ -66,7 +66,7 @@ describe("Survey page", () => {
     await user.click(screen.getByLabelText("I'm a professional painter"));
     await user.click(screen.getByRole("button", { name: "Submit feedback" }));
 
-    // data that goes to the backend:
+    // The exact data that goes to the backend:
     expect(api.submitFeedback).toHaveBeenCalledWith({
       name: "Amina Otieno",
       email: "amina@example.com",

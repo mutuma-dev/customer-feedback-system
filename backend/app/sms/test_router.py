@@ -36,7 +36,7 @@ def test_sender_is_normalised_to_e164(client):
 
 def test_invite_sends_the_brief_message(client, sent_sms):
     response = client.post("/api/sms/invite", json={"phone": "+254 711 000 111"})
-    assert response.json() == {"sent": True}
+    assert response.json() == {"sent": True, "detail": "fake ok"}
     assert sent_sms == [("+254711000111", INVITE_TEXT)]  # spaces were removed
 
 

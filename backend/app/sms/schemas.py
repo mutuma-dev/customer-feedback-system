@@ -10,6 +10,7 @@ class SmsInviteIn(BaseModel):
 
 
 class SmsInviteOut(BaseModel):
-    """Reply: did the SMS provider accept the message?"""
+    """Reply: did the SMS provider accept the message, and why / why not?"""
 
     sent: bool
+    detail: str  # e.g. "Accepted by Africa's Talking: Success (code 101)" or the refusal reason

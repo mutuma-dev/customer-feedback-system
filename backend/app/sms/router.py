@@ -22,7 +22,9 @@ def sms_invite(payload: SmsInviteIn) -> SmsInviteOut:
     after a purchase. For the demo you call it from the /docs page.
     """
     phone = service.normalise_phone(payload.phone.replace(" ", ""))
-    return SmsInviteOut(sent=sms_client.send_sms(phone, INVITE_TEXT))
+    result = sms_client.send_sms(phone, INVITE_TEXT)
+    # `detail` tells you exactly why a message was or was not accepted.
+    return SmsInviteOut(sent=result.ok, detail=result.detail)
 
 
 @router.post("/sms/incoming")

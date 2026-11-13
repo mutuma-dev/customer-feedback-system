@@ -1,4 +1,7 @@
 """Alert delivery: email (SMTP) and SMS to the care rep when a detractor appears.
+
+WHEN does this run? Right after a detractor's feedback is saved (from the web form OR from an
+SMS reply). It runs as a background task, i.e. after the customer already got their answer.
 """
 
 import logging
@@ -77,7 +80,8 @@ def dispatch_alert(alert_id: int, session_factory: Callable[[], Session] = Sessi
         # 2) Text the care rep (only if a phone number is configured).
         contact = customer.email or customer.phone or "no contact details"
         short = f"Detractor {response.mean}: {customer.name}, {contact}"
-        alert.sms_sent = bool(settings.care_rep_phone) and sms_client.send_sms(
-            settings.care_rep_phone, short
-        )
+        if settings.care_rep_phone:
+            alert.sms_sent = sms_client.send_sms(settings.care_rep_phone, short).ok
+        else:
+            alert.sms_sent = False  # no care phone configured
         db.commit()  # save email_sent / sms_sent

@@ -1,10 +1,16 @@
 /* =====================================================================================
-   globals.css : the styling for the WHOLE app. 
+   globals.css : the styling for the WHOLE app. It is written "mobile first":
+   the default rules are for phones, and the @media (min-width: ...) blocks at the
+   bottom of each section add changes for bigger screens.
+
+   Sections:  1 Colours   2 Base   3 Shared pieces   4 Survey   5 Dashboard
+              6 Bell   7 Side panel   8 Alert card   9 Table   10 Accessibility
    ===================================================================================== */
 
 /* ---------- 1. COLOURS ----------
    Colours are stored in "variables" (--name) so they are defined once and reused.
-    */
+   The dark-mode block below redefines the same names; the browser picks the right set
+   automatically from the user's phone/computer setting. */
 :root {
   --bg: #f6f7f9;        /* page background */
   --card: #ffffff;      /* cards and panels */

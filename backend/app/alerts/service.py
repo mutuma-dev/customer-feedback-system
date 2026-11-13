@@ -1,4 +1,4 @@
-"""Business logic for alerts"""
+"""Business logic for alerts (Spring: @Service)."""
 
 from sqlalchemy.orm import Session
 

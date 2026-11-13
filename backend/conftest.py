@@ -20,6 +20,7 @@ from app.core.config import get_settings
 from app.core.database import Base, get_db
 from app.main import app
 from app.sms import client as sms_client
+from app.sms.client import SmsResult
 
 
 @pytest.fixture(autouse=True)  # autouse = applied to EVERY test automatically
@@ -77,7 +78,11 @@ def client(db_factory, sent_alerts, sent_sms, monkeypatch):
     app.dependency_overrides[get_db] = override_db
     # Replace the background "send email + SMS" job and the SMS sender with recorders.
     monkeypatch.setattr(notifications, "dispatch_alert", sent_alerts.append)
-    monkeypatch.setattr(sms_client, "send_sms", lambda to, msg: sent_sms.append((to, msg)) or True)
+    monkeypatch.setattr(
+        sms_client,
+        "send_sms",
+        lambda to, msg: sent_sms.append((to, msg)) or SmsResult(True, "fake ok"),
+    )
     yield TestClient(app)
     app.dependency_overrides.clear()  # undo the replacement after the test
 

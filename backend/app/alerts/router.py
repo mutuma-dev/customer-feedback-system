@@ -1,4 +1,4 @@
-"""Alert endpoints"""
+"""Alert endpoints (Spring: @RestController)."""
 
 from fastapi import APIRouter
 

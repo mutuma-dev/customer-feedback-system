@@ -5,18 +5,20 @@ devthon-feedback/
 ├── backend/    FastAPI + PostgreSQL + Alembic     -> http://localhost:8000   (backend/README.md)
 ├── frontend/   Next.js 16 (React 19, TypeScript)  -> http://localhost:3000   (frontend/README.md)
 ├── docker-compose.yml        optional: run everything in containers
-└── .github/workflows/ci.yml  the pipeline 
+└── .github/workflows/ci.yml  the pipeline (see below)
 ```
 
+Tests live next to the code they test (`test_*.py` in each backend feature folder, `*.test.ts(x)` beside each frontend file).
 
 ## Run it
 
 ```bash
-# 1. Backend need postgre database feedback ready
+# 1. Backend (needs your local PostgreSQL and an empty database called "feedback")
 cd backend
 psql -U postgres -c "CREATE DATABASE feedback;"
-python3 -m venv .venv && source .venv/bin/activate        # Windows: .venv\Scripts\Activate.ps1
+python -m venv .venv && source .venv/bin/activate        # Windows: .venv\Scripts\Activate.ps1
 pip install -r requirements.txt
+cp .env.example .env      # then fill in your values (or keep the .env you already have)
 alembic upgrade head && python -m app.seed
 uvicorn app.main:app --reload --port 8000
 
@@ -25,12 +27,13 @@ cd frontend
 cp .env.local.example .env.local
 npm install && npm run dev
 ```
+Survey http://localhost:3000 · Dashboard http://localhost:3000/dashboard · API docs http://localhost:8000/docs
 
 ## Tests
 
 ```bash
-cd backend  && pip install -r requirements-dev.txt && pytest -q   
-cd frontend && npm test                                          
+cd backend  && pip install -r requirements-dev.txt && pytest -q    # 70 tests
+cd frontend && npm test                                            # 73 tests
 ```
 
 ## The pipeline (`.github/workflows/ci.yml`)

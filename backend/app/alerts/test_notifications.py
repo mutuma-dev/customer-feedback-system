@@ -5,6 +5,7 @@ from app.alerts.models import Alert
 from app.core.config import Settings
 from app.feedback.models import Customer, Response
 from app.sms import client as sms_client
+from app.sms.client import SmsResult
 
 
 def _make_alert(db_factory) -> int:
@@ -97,7 +98,9 @@ def test_dispatch_alert_records_what_was_delivered(db_factory, monkeypatch):
     settings = Settings(care_rep_email="care@x.com", care_rep_phone="+254711111111")
     monkeypatch.setattr(notifications, "get_settings", lambda: settings)
     monkeypatch.setattr(notifications, "send_email", lambda to, subject, body: True)
-    monkeypatch.setattr(sms_client, "send_sms", lambda to, msg: texts.append((to, msg)) or True)
+    monkeypatch.setattr(
+        sms_client, "send_sms", lambda to, msg: texts.append((to, msg)) or SmsResult(True, "ok")
+    )
 
     notifications.dispatch_alert(alert_id, session_factory=db_factory)
 
