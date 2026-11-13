@@ -1,14 +1,5 @@
 # Company X Feedback System (Devthon)
 
-```
-devthon-feedback/
-├── backend/    FastAPI + PostgreSQL + Alembic     -> http://localhost:8000   (backend/README.md)
-├── frontend/   Next.js 16 (React 19, TypeScript)  -> http://localhost:3000   (frontend/README.md)
-├── docker-compose.yml        optional: run everything in containers
-└── .github/workflows/ci.yml  the pipeline (see below)
-```
-
-Tests live next to the code they test (`test_*.py` in each backend feature folder, `*.test.ts(x)` beside each frontend file).
 
 ## Run it
 
@@ -27,13 +18,12 @@ cd frontend
 cp .env.local.example .env.local
 npm install && npm run dev
 ```
-Survey http://localhost:3000 · Dashboard http://localhost:3000/dashboard · API docs http://localhost:8000/docs
 
 ## Tests
 
 ```bash
-cd backend  && pip install -r requirements-dev.txt && pytest -q    # 70 tests
-cd frontend && npm test                                            # 73 tests
+cd backend  && pip install -r requirements-dev.txt && pytest -q    
+cd frontend && npm test                                            
 ```
 
 ## The pipeline (`.github/workflows/ci.yml`)
