@@ -1,9 +1,11 @@
+# Files that must NOT be copied into the Docker image.
 .venv
+# secrets stay out of images
 .env
 __pycache__
 .pytest_cache
 .ruff_cache
-# tests stay out of the production image
+# tests are not needed in production
 **/test_*.py
 conftest.py
 pytest.ini

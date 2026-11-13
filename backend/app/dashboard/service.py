@@ -15,6 +15,7 @@ from app.feedback.models import Response
 
 def get_stats(db: Session) -> StatsOut:
     by_category = repository.count_by_category(db)
+    # `v or 0.0` turns "no data" (None) into 0.0 so the dashboard shows zeros, not errors.
     product, care, happy, mean = (round(v or 0.0, 2) for v in repository.averages(db))
     return StatsOut(
         total=repository.count_all(db),

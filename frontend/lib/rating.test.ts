@@ -1,3 +1,4 @@
+// Tests for the words shown under the stars.
 import { describe, expect, it } from "vitest";
 import { labelFor } from "./rating";
 

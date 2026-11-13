@@ -1,71 +1,194 @@
+/* =====================================================================================
+   globals.css : the styling for the WHOLE app. It is written "mobile first":
+   the default rules are for phones, and the @media (min-width: ...) blocks at the
+   bottom of each section add changes for bigger screens.
+
+   Sections:  1 Colours   2 Base   3 Shared pieces   4 Survey   5 Dashboard
+              6 Bell   7 Side panel   8 Alert card   9 Table   10 Accessibility
+   ===================================================================================== */
+
+/* ---------- 1. COLOURS ----------
+   Colours are stored in "variables" (--name) so they are defined once and reused.
+   The dark-mode block below redefines the same names; the browser picks the right set
+   automatically from the user's phone/computer setting. */
 :root {
-  --bg: #f6f7f9; --card: #ffffff; --text: #111827; --muted: #6b7280; --line: #e5e7eb;
-  --accent: #1d4ed8; --accent-text: #ffffff; --star: #f5a623; --star-empty: #c3c8d1;
-  --bad: #c2410c; --mid: #6b7280; --good: #0f766e;
+  --bg: #f6f7f9;        /* page background */
+  --card: #ffffff;      /* cards and panels */
+  --text: #111827;      /* main text */
+  --muted: #6b7280;     /* secondary text */
+  --line: #e5e7eb;      /* borders and dividers */
+  --accent: #1d4ed8;    /* main blue (buttons, links, unread dot) */
+  --accent-text: #ffffff;
+  --star: #f5a623;      /* filled star */
+  --star-empty: #c3c8d1;/* empty star outline */
+  --bad: #c2410c;       /* unhappy (orange-red) */
+  --mid: #6b7280;       /* neutral (grey) */
+  --good: #0f766e;      /* happy (green) */
+  --badge: #dc2626;     /* red number badge on the bell */
 }
 @media (prefers-color-scheme: dark) {
   :root {
     --bg: #0f1218; --card: #171b24; --text: #f3f4f6; --muted: #9ca3af; --line: #272d3a;
     --accent: #6b9bff; --accent-text: #0b1020; --star: #fbbf24; --star-empty: #4b5363;
-    --bad: #fb923c; --mid: #9ca3af; --good: #2dd4bf;
+    --bad: #fb923c; --mid: #9ca3af; --good: #2dd4bf; --badge: #f87171;
   }
 }
-* { box-sizing: border-box; }
-body { margin: 0; background: var(--bg); color: var(--text); font-family: system-ui, -apple-system, "Segoe UI", sans-serif; line-height: 1.5; }
+
+/* ---------- 2. BASE ---------- */
+* { box-sizing: border-box; } /* padding and borders are included in an element's width */
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+  line-height: 1.5;
+}
 a { color: var(--accent); }
-.wrap { max-width: 480px; margin: 0 auto; padding: 32px 16px 48px; }
-.wide { max-width: 1000px; }
-.card { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 28px 24px; box-shadow: 0 1px 2px rgba(16, 24, 40, 0.05); }
-.brand { font-weight: 600; font-size: 14px; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); margin: 0 0 12px; }
-.muted { color: var(--muted); }
 h1 { margin: 0 0 20px; font-size: 22px; line-height: 1.3; font-weight: 600; }
-h2 { margin: 0 0 14px; font-size: 16px; font-weight: 600; }
+h2 { margin: 0 0 6px; font-size: 16px; font-weight: 600; }
+h3 { margin: 0; font-size: 16px; font-weight: 600; }
+.muted { color: var(--muted); }
+
+/* ---------- 3. SHARED PIECES ---------- */
+
+/* Page container: centred, with side padding so nothing touches the screen edge. */
+.wrap { max-width: 480px; margin: 0 auto; padding: 32px 16px 48px; }
+.brand { font-weight: 600; font-size: 14px; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); margin: 0 0 12px; }
+
+/* Card: the white rounded box used everywhere. */
+.card { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 20px 16px; box-shadow: 0 1px 2px rgba(16, 24, 40, 0.05); }
+
+/* Buttons. ".btn" is full width (survey). ".small" is compact. All keep a 40px+ tap height. */
+.btn { width: 100%; min-height: 48px; margin-top: 16px; border: 0; border-radius: 8px; font-size: 16px; font-weight: 600; background: var(--accent); color: var(--accent-text); cursor: pointer; display: inline-flex; align-items: center; justify-content: center; text-decoration: none; }
+.btn:disabled { opacity: .4; cursor: not-allowed; }
+.btn.small { width: auto; min-height: 40px; padding: 0 16px; margin: 0; font-size: 14px; }
+.btn.outline { background: transparent; color: var(--text); border: 1px solid var(--line); }
+.btn.ghost { background: transparent; color: var(--muted); font-weight: 500; margin-top: 4px; min-height: 40px; }
+.btn.small.ghost { margin-top: 0; }
+.link-btn { background: none; border: 0; padding: 8px 0; color: var(--accent); font-size: 14px; font-weight: 600; cursor: pointer; }
+.link-btn:disabled { color: var(--muted); cursor: default; }
+.icon-btn { width: 40px; height: 40px; border: 0; border-radius: 8px; background: transparent; color: var(--text); font-size: 28px; line-height: 1; cursor: pointer; }
+
+/* Form fields: 16px text stops iPhones from zooming in when a field is tapped. */
+label { display: block; font-size: 14px; font-weight: 500; margin: 14px 0 4px; }
+input, textarea { width: 100%; min-height: 46px; padding: 10px 12px; font-size: 16px; border-radius: 8px; border: 1px solid var(--line); background: var(--card); color: var(--text); font-family: inherit; }
+textarea { min-height: 140px; resize: vertical; }
+.check { display: flex; align-items: center; gap: 10px; font-weight: 400; margin-top: 16px; }
+.check input { width: 20px; min-height: 20px; }
+.error { color: var(--bad); margin: 12px 0 0; font-size: 14px; }
+
+/* Chips: small coloured labels such as "Unhappy" or "Email sent". */
+.chip { display: inline-flex; align-items: center; padding: 2px 10px; border-radius: 99px; font-size: 12px; font-weight: 600; border: 1px solid currentColor; }
+.chip-bad { color: var(--bad); }
+.chip-ok { color: var(--good); }
+.chip-muted { color: var(--muted); }
+.chips { list-style: none; padding: 0; margin: 12px 0; display: flex; flex-wrap: wrap; gap: 6px; }
+
+/* "Fields": a labelled list. Left = label, right = value (used for contact details and ratings). */
+.fields { margin: 12px 0; }
+.fields > div { display: flex; gap: 12px; padding: 7px 0; border-bottom: 1px solid var(--line); align-items: center; }
+.fields > div:last-child { border-bottom: 0; }
+.fields dt { flex: 0 0 104px; color: var(--muted); font-size: 13px; }
+.fields dd { margin: 0; font-size: 14px; word-break: break-word; } /* long emails wrap instead of overflowing */
+
+.stars-display { display: inline-flex; gap: 2px; vertical-align: middle; }
+
+/* ---------- 4. SURVEY ---------- */
 .step-row { display: flex; justify-content: space-between; font-size: 13px; color: var(--muted); }
 .progress { height: 4px; background: var(--line); border-radius: 99px; overflow: hidden; margin: 8px 0 24px; }
 .progress > div { height: 100%; background: var(--accent); transition: width .25s; }
 
-/* star rating */
+/* The row of 5 clickable stars. */
 .star-input { display: flex; justify-content: center; gap: 4px; margin: 8px 0 4px; }
 .star-input button { background: none; border: 0; padding: 4px; border-radius: 8px; cursor: pointer; line-height: 0; min-width: 52px; min-height: 52px; }
 .star-input button svg { transition: transform .12s; }
 .star-input button:hover svg { transform: scale(1.1); }
 .rating-label { text-align: center; color: var(--muted); font-size: 14px; min-height: 1.5em; margin: 4px 0 8px; }
-.stars-display { display: inline-flex; gap: 2px; vertical-align: middle; }
 
-button:focus-visible, input:focus-visible, textarea:focus-visible, tr:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
-.btn { width: 100%; min-height: 48px; margin-top: 16px; border: 0; border-radius: 8px; font-size: 16px; font-weight: 600; background: var(--accent); color: var(--accent-text); cursor: pointer; }
-.btn:disabled { opacity: .4; cursor: not-allowed; }
-.btn.ghost { background: transparent; color: var(--muted); font-weight: 500; min-height: 40px; margin-top: 4px; }
-.btn.small { width: auto; min-height: 34px; padding: 0 14px; margin: 0; font-size: 14px; }
-.btn.small.outline { background: transparent; color: var(--text); border: 1px solid var(--line); }
-label { display: block; font-size: 14px; font-weight: 500; margin: 14px 0 4px; }
-input, textarea { width: 100%; min-height: 46px; padding: 10px 12px; font-size: 16px; border-radius: 8px; border: 1px solid var(--line); background: var(--card); color: var(--text); font-family: inherit; }
-.check { display: flex; align-items: center; gap: 10px; font-weight: 400; margin-top: 16px; }
-.check input { width: 20px; min-height: 20px; }
-.error { color: var(--bad); margin: 12px 0 0; font-size: 14px; }
+/* Thank-you screen: the circle and tick are "drawn" by animating the stroke. */
 .thanks { text-align: center; padding: 24px 0 8px; }
 .thanks h1 { margin: 16px 0 6px; }
 .tick circle { stroke-dasharray: 151; stroke-dashoffset: 151; animation: draw .5s ease forwards; }
 .tick path { stroke-dasharray: 40; stroke-dashoffset: 40; animation: draw .4s .4s ease forwards; }
 @keyframes draw { to { stroke-dashoffset: 0; } }
-@media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } .tick circle, .tick path { stroke-dashoffset: 0; } }
 
-/* dashboard */
-.top { margin-bottom: 4px; }
-.top h1 { margin-bottom: 8px; }
-.grid { display: grid; gap: 16px; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); margin-top: 16px; }
-.total { font-size: 64px; font-weight: 700; line-height: 1.1; }
+/* ---------- 5. DASHBOARD ---------- */
+.dash { max-width: 1100px; } /* wider than the survey */
+.dash-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; margin-bottom: 8px; }
+.dash-header h1 { margin-bottom: 8px; }
+
+/* Cards in a responsive grid: 1 column on phones, 2-3 on bigger screens, automatically. */
+.dash-grid { display: grid; gap: 16px; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); margin-top: 8px; }
+.spaced { margin-top: 16px; }
+.big-number { font-size: 56px; font-weight: 700; line-height: 1.1; margin: 8px 0 4px; }
+.avg-overall { margin: 8px 0 0; }
+.avg-overall strong { font-size: 32px; }
+
+/* Donut chart + its legend */
+.donut-wrap { display: flex; flex-direction: column; align-items: center; gap: 12px; margin-top: 8px; }
+.donut { width: 100%; max-width: 180px; height: auto; }
+.legend { list-style: none; padding: 0; margin: 0; font-size: 14px; align-self: stretch; }
+.legend li { padding: 2px 0; }
+.dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 8px; }
+
+@media (min-width: 640px) {
+  .wrap { padding-top: 48px; }
+  .card { padding: 24px; }
+}
+
+/* ---------- 6. BELL (alerts icon with the unread number) ---------- */
+.bell { position: relative; width: 48px; height: 48px; border-radius: 12px; border: 1px solid var(--line); background: var(--card); color: var(--text); cursor: pointer; display: inline-flex; align-items: center; justify-content: center; flex: 0 0 auto; }
+.bell-badge { position: absolute; top: -6px; right: -6px; min-width: 22px; height: 22px; padding: 0 6px; border-radius: 99px; background: var(--badge); color: #fff; font-size: 12px; font-weight: 700; display: flex; align-items: center; justify-content: center; border: 2px solid var(--bg); }
+
+/* ---------- 7. SIDE PANEL (slides in from the right; full screen on phones) ---------- */
+.panel-overlay { position: fixed; inset: 0; z-index: 50; background: rgba(15, 18, 24, 0.5); display: flex; justify-content: flex-end; }
+.panel { background: var(--bg); width: 100%; height: 100%; overflow-y: auto; animation: slide-in .2s ease-out; }
+@keyframes slide-in { from { transform: translateX(24px); opacity: 0; } to { transform: none; opacity: 1; } }
+/* The header stays visible while the content scrolls; env(safe-area-inset-*) keeps it clear of phone notches. */
+.panel-head { position: sticky; top: 0; z-index: 1; display: flex; align-items: center; justify-content: space-between; padding: 8px 8px 8px 16px; padding-top: max(8px, env(safe-area-inset-top)); background: var(--card); border-bottom: 1px solid var(--line); }
+.panel-head h2 { margin: 0; font-size: 18px; }
+.panel-body { padding: 16px; padding-bottom: max(16px, env(safe-area-inset-bottom)); }
+@media (min-width: 640px) {
+  .panel { max-width: 440px; border-left: 1px solid var(--line); }
+}
+
+/* Tabs "Unread (3) | All (12)" and the "Mark all as read" link */
+.panel-toolbar { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-bottom: 12px; flex-wrap: wrap; }
+.tabs { display: inline-flex; background: var(--line); border-radius: 8px; padding: 3px; }
+.tabs button { border: 0; background: transparent; color: var(--muted); padding: 8px 14px; border-radius: 6px; font-size: 14px; font-weight: 600; cursor: pointer; min-height: 40px; }
+.tabs button[aria-selected="true"] { background: var(--card); color: var(--text); box-shadow: 0 1px 2px rgba(0, 0, 0, .12); }
+.empty { text-align: center; color: var(--muted); padding: 32px 8px; }
+.alert-list { list-style: none; margin: 0; padding: 0; }
+
+/* ---------- 8. ALERT CARD ---------- */
+.alert-card { background: var(--card); border: 1px solid var(--line); border-left: 4px solid var(--line); border-radius: 12px; padding: 14px; margin-bottom: 12px; }
+.alert-card.is-unread { border-left-color: var(--accent); } /* unread = blue stripe + dot */
+.alert-card-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+.alert-title { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.unread-dot { width: 10px; height: 10px; border-radius: 50%; background: var(--accent); flex: 0 0 auto; }
+.alert-time { color: var(--muted); font-size: 12px; white-space: nowrap; }
+.alert-score { margin: 6px 0 0; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.card-actions { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-top: 12px; }
+.read-label { color: var(--good); font-size: 14px; font-weight: 600; }
+.reply { margin-top: 14px; padding-top: 4px; border-top: 1px solid var(--line); }
+.reply textarea { margin-top: 6px; }
+
+/* ---------- 9. TABLE (recent responses) ---------- */
+.table-wrap { overflow-x: auto; margin-top: 8px; } /* scrolls sideways instead of breaking the page */
+table { width: 100%; border-collapse: collapse; font-size: 14px; }
+th, td { text-align: left; padding: 11px 6px; border-bottom: 1px solid var(--line); }
+th { color: var(--muted); font-weight: 500; font-size: 13px; }
+tr.row { cursor: pointer; }
+tr.row:hover { background: color-mix(in srgb, var(--accent) 6%, transparent); }
 .pill { display: inline-block; padding: 1px 10px; border-radius: 99px; font-size: 12px; font-weight: 600; border: 1px solid currentColor; }
 .pill.detractor { color: var(--bad); } .pill.passive { color: var(--mid); } .pill.promoter { color: var(--good); }
-table { width: 100%; border-collapse: collapse; font-size: 14px; }
-th, td { text-align: left; padding: 9px 6px; border-bottom: 1px solid var(--line); }
-th { color: var(--muted); font-weight: 500; font-size: 13px; }
-tr.row { cursor: pointer; } tr.row:hover { background: color-mix(in srgb, var(--accent) 6%, transparent); }
-.legend { display: flex; gap: 14px; flex-wrap: wrap; font-size: 14px; margin-top: 8px; }
-.dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 6px; }
-.alert { border: 1px solid var(--line); border-left: 3px solid var(--bad); border-radius: 8px; padding: 12px; margin-bottom: 12px; }
-.alert.read { border-left-color: var(--line); opacity: .7; }
-.alert textarea { min-height: 150px; margin-top: 8px; }
-.detail { border: 1px solid var(--line); border-radius: 8px; padding: 12px; margin-bottom: 12px; }
-.detail-row { display: flex; justify-content: space-between; align-items: center; padding: 4px 0; font-size: 14px; }
-.row-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px; align-items: center; }
+@media (max-width: 479px) { .hide-xs { display: none; } } /* hide the "When" column on small phones */
+
+/* ---------- 10. ACCESSIBILITY ---------- */
+/* A clear outline around whatever has keyboard focus. */
+button:focus-visible, input:focus-visible, textarea:focus-visible, a:focus-visible, tr:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+/* People who ask their device for "reduced motion" get no animations. */
+@media (prefers-reduced-motion: reduce) {
+  * { animation: none !important; transition: none !important; }
+  .tick circle, .tick path { stroke-dashoffset: 0; }
+}

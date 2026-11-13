@@ -1,3 +1,4 @@
+# Generated or private files that must not be committed.
 node_modules
 .next
 next-env.d.ts

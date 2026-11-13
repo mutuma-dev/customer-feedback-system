@@ -3,6 +3,7 @@
 Revision ID: ${up_revision}
 Revises: ${down_revision | comma,n}
 """
+# This is the TEMPLATE Alembic uses when you run: alembic revision -m "message"
 from alembic import op
 import sqlalchemy as sa
 ${imports if imports else ""}

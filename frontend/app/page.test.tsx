@@ -1,17 +1,21 @@
+// Tests for the survey page ("/"): the full customer journey.
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { api } from "@/lib/api";
 import SurveyPage from "./page";
 
+// Replace the real backend calls with fakes, so these tests need no server.
 vi.mock("@/lib/api", () => ({ api: { submitFeedback: vi.fn() } }));
 
+/** Click a star, then the button that moves on. */
 async function answer(user: ReturnType<typeof userEvent.setup>, stars: number, next: string) {
   await user.click(screen.getByRole("radio", { name: `${stars} ${stars === 1 ? "star" : "stars"}` }));
   await user.click(screen.getByRole("button", { name: next }));
 }
 
 beforeEach(() => {
+  // Before each test: forget old calls and make the fake backend answer "saved".
   vi.mocked(api.submitFeedback).mockReset();
   vi.mocked(api.submitFeedback).mockResolvedValue({
     id: 1,
@@ -25,7 +29,9 @@ describe("Survey page", () => {
   it("starts on question 1 with the Next button disabled", () => {
     render(<SurveyPage />);
     expect(screen.getByText("Question 1 of 3")).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "Rate your experience with our product." })).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { name: "Rate your experience with our product." }),
+    ).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Next question" })).toBeDisabled();
   });
 
@@ -60,6 +66,7 @@ describe("Survey page", () => {
     await user.click(screen.getByLabelText("I'm a professional painter"));
     await user.click(screen.getByRole("button", { name: "Submit feedback" }));
 
+    // The exact data that goes to the backend:
     expect(api.submitFeedback).toHaveBeenCalledWith({
       name: "Amina Otieno",
       email: "amina@example.com",
@@ -93,7 +100,7 @@ describe("Survey page", () => {
     await user.click(screen.getByRole("button", { name: "Submit feedback" }));
 
     expect(await screen.findByRole("alert")).toHaveTextContent("We couldn't send your feedback");
-    expect(screen.getByLabelText("Full name")).toHaveValue("Amina");
+    expect(screen.getByLabelText("Full name")).toHaveValue("Amina"); // nothing was lost
   });
 
   it("has no link to the dashboard (different audiences)", () => {

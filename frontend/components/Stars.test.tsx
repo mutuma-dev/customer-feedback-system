@@ -1,3 +1,4 @@
+// Tests for the star components.
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
@@ -13,7 +14,7 @@ describe("StarRating", () => {
   });
 
   it("calls onChange with the clicked star number", async () => {
-    const onChange = vi.fn();
+    const onChange = vi.fn(); // a fake function that remembers how it was called
     render(<StarRating value={null} onChange={onChange} label="q" />);
     await userEvent.click(screen.getByRole("radio", { name: "3 stars" }));
     expect(onChange).toHaveBeenCalledWith(3);

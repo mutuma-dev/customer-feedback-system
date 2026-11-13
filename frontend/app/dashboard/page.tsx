@@ -1,24 +1,44 @@
-"use client";
+"use client"; // uses state, timers and clicks, so it runs in the browser
+
+// THE DASHBOARD (route "/dashboard"). What Company X staff see:
+//   header with the alerts bell -> summary cards -> trend chart -> recent responses table.
+// There is deliberately NO link back to the survey: customers and staff are different people.
 
 import { useCallback, useEffect, useState } from "react";
+import { AlertsPanel } from "@/components/AlertsPanel";
 import { Donut, TrendChart } from "@/components/Charts";
-import { api, Alert, FeedbackResponse, Stats, Trend } from "@/lib/api";
+import { NotificationBell } from "@/components/NotificationBell";
+import { ResponseDetail } from "@/components/ResponseDetail";
 import { StarsDisplay } from "@/components/Stars";
+import { api, type Alert, type FeedbackResponse, type Stats, type Trend } from "@/lib/api";
+import { categoryLabel, timeAgo } from "@/lib/format";
 
-const REFRESH_MS = 5000; // the dashboard re-fetches every 5 seconds ("live")
+const REFRESH_MS = 5000; // the dashboard asks the backend for fresh data every 5 seconds
 
 export default function DashboardPage() {
+  // ---- Data from the backend (null / empty until the first answer arrives) ----
   const [stats, setStats] = useState<Stats | null>(null);
   const [trend, setTrend] = useState<Trend | null>(null);
   const [responses, setResponses] = useState<FeedbackResponse[]>([]);
   const [alerts, setAlerts] = useState<Alert[]>([]);
-  const [selected, setSelected] = useState<FeedbackResponse | null>(null);
-  const [drafts, setDrafts] = useState<Record<number, { text: string; ai: boolean }>>({});
+  // ---- What the user has opened ----
+  const [panelOpen, setPanelOpen] = useState(false); // the alerts panel
+  const [selected, setSelected] = useState<FeedbackResponse | null>(null); // response details
+  // ---- Error banner ----
   const [error, setError] = useState<string | null>(null);
 
+  // The number on the bell: alerts that have not been marked as read.
+  const unreadCount = alerts.filter((a) => !a.is_read).length;
+
+  /** Fetch everything from the backend (4 requests at the same time). */
   const load = useCallback(async () => {
     try {
-      const [s, t, r, a] = await Promise.all([api.stats(), api.trend(), api.responses(), api.alerts()]);
+      const [s, t, r, a] = await Promise.all([
+        api.stats(),
+        api.trend(),
+        api.responses(),
+        api.alerts(),
+      ]);
       setStats(s);
       setTrend(t);
       setResponses(r);
@@ -29,134 +49,162 @@ export default function DashboardPage() {
     }
   }, []);
 
+  // Load once straight away, then again every 5 seconds ("live" dashboard).
   useEffect(() => {
-    const first = setTimeout(load, 0); // first fetch right away, but not synchronously in the effect
+    const first = setTimeout(load, 0); // first load (a timer keeps the effect itself simple)
     const id = setInterval(load, REFRESH_MS);
     return () => {
+      // cleanup when leaving the page, so timers do not keep running
       clearTimeout(first);
       clearInterval(id);
     };
   }, [load]);
 
-  async function draft(alert: Alert) {
-    const res = await api.draftReply(alert.id);
-    setDrafts((d) => ({ ...d, [alert.id]: { text: res.draft, ai: res.ai_used } }));
+  /** Mark ONE alert as read. The bell number drops immediately, then we sync with the server. */
+  async function markRead(id: number) {
+    setAlerts((all) => all.map((a) => (a.id === id ? { ...a, is_read: true } : a)));
+    try {
+      await api.markAlertRead(id);
+    } finally {
+      await load(); // either way, show what the server really has
+    }
   }
 
-  async function markRead(alert: Alert) {
-    await api.markAlertRead(alert.id);
-    load();
+  /** Mark EVERY alert as read. */
+  async function markAllRead() {
+    setAlerts((all) => all.map((a) => ({ ...a, is_read: true })));
+    try {
+      await api.markAllAlertsRead();
+    } finally {
+      await load();
+    }
   }
 
   return (
-    <main className="wrap wide">
-      <div className="top">
-        <p className="brand">Company X</p>
-        <h1>Feedback dashboard</h1>
-      </div>
-      {error && <p className="error" role="alert">{error}</p>}
+    <main className="wrap dash">
+      {/* ================= Header: title + alerts bell ================= */}
+      <header className="dash-header">
+        <div>
+          <p className="brand">Company X</p>
+          <h1>Feedback dashboard</h1>
+        </div>
+        <NotificationBell unread={unreadCount} onClick={() => setPanelOpen(true)} />
+      </header>
 
-      <div className="grid">
+      {error && (
+        <p className="error" role="alert">
+          {error}
+        </p>
+      )}
+
+      {/* ================= Summary cards ================= */}
+      <div className="dash-grid">
         <section className="card" aria-label="Total respondents">
-          <div className="muted">Total respondents</div>
-          <div className="total">{stats?.total ?? "–"}</div>
-          {stats && (
-            <p className="muted">
-              Averages · product {stats.avg_product} · care {stats.avg_care} · happy {stats.avg_happy}
-            </p>
+          <h2>Total respondents</h2>
+          <div className="big-number">{stats?.total ?? "–"}</div>
+          <p className="muted">people have given feedback</p>
+        </section>
+
+        <section className="card" aria-label="Average ratings">
+          <h2>Average ratings</h2>
+          {stats ? (
+            <>
+              <p className="avg-overall">
+                <strong>{stats.avg_mean.toFixed(2)}</strong> / 5 overall
+              </p>
+              <dl className="fields">
+                <div>
+                  <dt>Product</dt>
+                  <dd>
+                    <StarsDisplay value={Math.round(stats.avg_product)} /> {stats.avg_product}
+                  </dd>
+                </div>
+                <div>
+                  <dt>Customer care</dt>
+                  <dd>
+                    <StarsDisplay value={Math.round(stats.avg_care)} /> {stats.avg_care}
+                  </dd>
+                </div>
+                <div>
+                  <dt>Happiness</dt>
+                  <dd>
+                    <StarsDisplay value={Math.round(stats.avg_happy)} /> {stats.avg_happy}
+                  </dd>
+                </div>
+              </dl>
+            </>
+          ) : (
+            <p className="muted">Loading…</p>
           )}
         </section>
-        <section className="card" aria-label="Detractors, passives and promoters">
-          <h2>Customer split</h2>
-          {stats && <Donut detractors={stats.detractors} passives={stats.passives} promoters={stats.promoters} />}
+
+        <section className="card" aria-label="How customers feel">
+          <h2>How customers feel</h2>
+          <p className="muted">Share of unhappy, neutral and happy customers</p>
+          {stats && (
+            <Donut
+              detractors={stats.detractors}
+              passives={stats.passives}
+              promoters={stats.promoters}
+            />
+          )}
         </section>
       </div>
 
-      <section className="card" style={{ marginTop: 16 }} aria-label="Trend">
-        <h2>Daily trend and 7-day projection</h2>
+      {/* ================= Trend ================= */}
+      <section className="card spaced" aria-label="Satisfaction over time">
+        <h2>Satisfaction over time</h2>
+        <p className="muted">Daily average score (1-5). The dashed line is a 7-day forecast.</p>
         {trend && <TrendChart points={trend.points} projection={trend.projection} />}
       </section>
 
-      <div className="grid">
-        <section className="card" aria-label="Alerts">
-          <h2>Detractor alerts ({alerts.filter((a) => !a.is_read).length} new)</h2>
-          {alerts.length === 0 && <p className="muted">No alerts. 🎉</p>}
-          {alerts.map((a) => {
-            const c = a.response.customer;
-            const d = drafts[a.id] ?? (a.draft_reply ? { text: a.draft_reply, ai: false } : null);
-            const mailto = c.email
-              ? `mailto:${c.email}?subject=${encodeURIComponent("About your feedback")}&body=${encodeURIComponent(d?.text ?? "")}`
-              : null;
-            return (
-              <div key={a.id} className={`alert ${a.is_read ? "read" : ""}`}>
-                <strong>{c.name}</strong> · mean {a.response.mean.toFixed(2)}{" "}
-                <span className="muted">
-                  ({a.response.product_rating}/{a.response.care_rating}/{a.response.happy_rating})
-                </span>
-                <div className="muted">
-                  {c.email ?? "no email"} · {c.phone ?? "no phone"} · via {a.response.source}
-                  {" · "}email {a.email_sent ? "sent" : "not sent"} · sms {a.sms_sent ? "sent" : "not sent"}
-                </div>
-                <div className="row-actions">
-                  <button className="btn small" onClick={() => draft(a)}>Draft reply</button>
-                  {!a.is_read && (
-                    <button className="btn small outline" onClick={() => markRead(a)}>Mark handled</button>
-                  )}
-                </div>
-                {d && (
-                  <>
-                    <label htmlFor={`draft-${a.id}`} className="muted">
-                      {d.ai ? "AI draft" : "Template draft"} - edit before sending
-                    </label>
-                    <textarea
-                      id={`draft-${a.id}`}
-                      value={d.text}
-                      onChange={(e) => setDrafts((all) => ({ ...all, [a.id]: { ...d, text: e.target.value } }))}
-                    />
-                    <div className="row-actions">
-                      {mailto ? <a href={mailto}>Open in my email app</a> : c.phone && <a href={`tel:${c.phone}`}>Call {c.phone}</a>}
-                    </div>
-                  </>
-                )}
-              </div>
-            );
-          })}
-        </section>
-
-        <section className="card" aria-label="Individual ratings">
-          <h2>Individual ratings</h2>
-          {selected && (
-            <div className="detail" role="region" aria-label="Selected customer">
-              <strong>{selected.customer.name}</strong>{" "}
-              <span className={`pill ${selected.category}`}>{selected.category}</span>
-              <div className="detail-row"><span>Product experience</span><StarsDisplay value={selected.product_rating} /></div>
-              <div className="detail-row"><span>Customer care</span><StarsDisplay value={selected.care_rating} /></div>
-              <div className="detail-row"><span>Happy with product</span><StarsDisplay value={selected.happy_rating} /></div>
-              <button className="btn small outline" onClick={() => setSelected(null)}>Close</button>
-            </div>
-          )}
+      {/* ================= Recent responses ================= */}
+      <section className="card spaced" aria-label="Recent responses">
+        <h2>Recent responses</h2>
+        <p className="muted">Tap a row to see the full ratings.</p>
+        {/* table-wrap lets the table scroll sideways on very small screens */}
+        <div className="table-wrap">
           <table>
             <thead>
-              <tr><th>Customer</th><th>Mean</th><th>Verdict</th></tr>
+              <tr>
+                <th>Customer</th>
+                <th>Average</th>
+                <th>Feeling</th>
+                <th className="hide-xs">When</th>
+              </tr>
             </thead>
             <tbody>
               {responses.map((r) => (
                 <tr
                   key={r.id}
                   className="row"
-                  tabIndex={0}
+                  tabIndex={0} // reachable with the Tab key
                   onClick={() => setSelected(r)}
                   onKeyDown={(e) => e.key === "Enter" && setSelected(r)}
                 >
                   <td>{r.customer.name}</td>
                   <td>{r.mean.toFixed(2)}</td>
-                  <td><span className={`pill ${r.category}`}>{r.category}</span></td>
+                  <td>
+                    <span className={`pill ${r.category}`}>{categoryLabel(r.category)}</span>
+                  </td>
+                  <td className="hide-xs">{timeAgo(r.created_at)}</td>
                 </tr>
               ))}
             </tbody>
           </table>
-        </section>
-      </div>
+        </div>
+      </section>
+
+      {/* ================= Panels (hidden until opened) ================= */}
+      <AlertsPanel
+        open={panelOpen}
+        alerts={alerts}
+        onClose={() => setPanelOpen(false)}
+        onMarkRead={markRead}
+        onMarkAllRead={markAllRead}
+        onDraft={api.draftReply}
+      />
+      <ResponseDetail response={selected} onClose={() => setSelected(null)} />
     </main>
   );
 }

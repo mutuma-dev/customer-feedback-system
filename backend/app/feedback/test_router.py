@@ -1,9 +1,12 @@
+"""Tests for POST /api/feedback (the survey submission)."""
+
 from sqlalchemy import func, select
 
 from app.feedback.models import Customer
 
 
 def test_promoter_creates_no_alert(client, make_payload, sent_alerts):
+    # Happy customer (5,4,5): saved, but nobody is alerted.
     response = client.post("/api/feedback", json=make_payload())
     assert response.status_code == 201
     assert response.json()["category"] == "promoter"
@@ -12,6 +15,7 @@ def test_promoter_creates_no_alert(client, make_payload, sent_alerts):
 
 
 def test_detractor_creates_alert_and_triggers_notification(client, make_payload, sent_alerts):
+    # Unhappy customer (2,3,2): an alert is created and the background alert job is queued.
     body = make_payload(product_rating=2, care_rating=3, happy_rating=2, email="b@example.com")
     response = client.post("/api/feedback", json=body)
     assert response.json() == {
@@ -20,10 +24,11 @@ def test_detractor_creates_alert_and_triggers_notification(client, make_payload,
         "category": "detractor",
         "alert_created": True,
     }
-    assert sent_alerts == [1]
+    assert sent_alerts == [1]  # the id of the alert that should be emailed
 
 
 def test_rating_out_of_range_is_rejected(client, make_payload):
+    # 422 = "your data is invalid". Ratings must be 1 to 5.
     assert client.post("/api/feedback", json=make_payload(care_rating=6)).status_code == 422
     assert client.post("/api/feedback", json=make_payload(care_rating=0)).status_code == 422
 
@@ -37,6 +42,7 @@ def test_missing_name_is_rejected(client, make_payload):
 
 
 def test_same_email_reuses_the_customer(client, make_payload, db_factory):
+    # Two submissions from the same email = two responses but ONE customer.
     client.post("/api/feedback", json=make_payload())
     client.post("/api/feedback", json=make_payload(care_rating=2))
     with db_factory() as db:

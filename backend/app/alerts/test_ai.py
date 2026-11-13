@@ -1,3 +1,5 @@
+"""Tests for the AI draft: success, every failure mode, and privacy."""
+
 import httpx
 
 from app.alerts import ai
@@ -5,6 +7,8 @@ from app.core.config import Settings
 
 
 class FakeResponse:
+    """Stands in for the HTTP response returned by the AI provider."""
+
     def __init__(self, payload, fail=False):
         self._payload, self._fail = payload, fail
 
@@ -17,6 +21,7 @@ class FakeResponse:
 
 
 def _with_key(monkeypatch):
+    """Make the AI module believe an API key is configured."""
     monkeypatch.setattr(ai, "get_settings", lambda: Settings(ai_api_key="test-key"))
 
 
@@ -32,15 +37,15 @@ def test_successful_ai_call_is_used(monkeypatch):
     seen = {}
 
     def fake_post(url, headers, json, timeout):
-        seen.update(url=url, headers=headers, json=json)
+        seen.update(url=url, headers=headers, json=json)  # remember what we sent
         return FakeResponse({"choices": [{"message": {"content": "  Dear Amina, sorry!  "}}]})
 
     monkeypatch.setattr(ai.httpx, "post", fake_post)
     draft, used = ai.draft_reply("Amina Otieno", 1, 2, 1)
-    assert (draft, used) == ("Dear Amina, sorry!", True)
+    assert (draft, used) == ("Dear Amina, sorry!", True)  # whitespace is trimmed
     assert seen["url"].endswith("/chat/completions")
     assert seen["headers"]["Authorization"] == "Bearer test-key"
-    # privacy: only first name + ratings are sent, never the surname/email/phone
+    # Privacy: only the first name and ratings are sent, never the surname.
     prompt = seen["json"]["messages"][1]["content"]
     assert "Amina" in prompt and "Otieno" not in prompt
 

@@ -1,4 +1,4 @@
-"""Aggregate queries for the dashboard (counts, averages, daily means)."""
+"""Aggregate queries for the dashboard: counts, averages and daily means."""
 
 from datetime import date, datetime
 
@@ -13,11 +13,13 @@ def count_all(db: Session) -> int:
 
 
 def count_by_category(db: Session) -> dict[str, int]:
+    """e.g. {"detractor": 10, "passive": 13, "promoter": 46} (SQL GROUP BY)."""
     rows = db.execute(select(Response.category, func.count()).group_by(Response.category)).all()
     return {category: count for category, count in rows}
 
 
 def averages(db: Session) -> tuple[float | None, float | None, float | None, float | None]:
+    """Average product, care, happy rating and average mean. None when there is no data."""
     row = db.execute(
         select(
             func.avg(Response.product_rating),
@@ -30,7 +32,7 @@ def averages(db: Session) -> tuple[float | None, float | None, float | None, flo
 
 
 def daily_means(db: Session, since: datetime) -> list[tuple[date, float, int]]:
-    """(day, average mean, number of responses) for each day since `since`."""
+    """(day, average mean, number of responses) for each day since `since`, oldest first."""
     day = func.date(Response.created_at).label("day")
     rows = db.execute(
         select(day, func.avg(Response.mean), func.count())
@@ -38,7 +40,7 @@ def daily_means(db: Session, since: datetime) -> list[tuple[date, float, int]]:
         .group_by(day)
         .order_by(day)
     ).all()
-    # PostgreSQL returns a date, SQLite a string: accept both.
+    # PostgreSQL returns a real date, SQLite (used in tests) a string: accept both.
     return [
         (d if isinstance(d, date) else date.fromisoformat(str(d)), round(float(m), 2), int(n))
         for d, m, n in rows

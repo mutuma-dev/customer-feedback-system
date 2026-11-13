@@ -1,3 +1,5 @@
+# Everything the app needs ...
 -r requirements.txt
+# ... plus the tools used only while developing:
 pytest>=8.3.3
 ruff>=0.7.0

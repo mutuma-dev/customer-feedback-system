@@ -1,4 +1,7 @@
-"""Business logic for submitting feedback (Spring: @Service). One method = one transaction."""
+"""Business logic for submitting feedback (Spring: @Service).
+
+One public function = one transaction: everything is saved together or not at all.
+"""
 
 from sqlalchemy.orm import Session
 
@@ -12,7 +15,10 @@ from app.feedback.scoring import classify
 def _find_or_create_customer(
     db: Session, *, name: str, email: str | None, phone: str | None, kind: str
 ) -> Customer:
-    """Re-use an existing customer (same email, else same phone) so repeat feedback is linked."""
+    """Re-use an existing customer (same email, else same phone) so repeat feedback is linked.
+
+    A leading underscore in the name means "private helper, used only in this file".
+    """
     customer = repository.find_customer_by_email(db, email) if email else None
     if customer is None and phone:
         customer = repository.find_customer_by_phone(db, phone)
@@ -25,7 +31,7 @@ def _find_or_create_customer(
 
 def submit_feedback(
     db: Session,
-    *,
+    *,  # everything after the star must be passed by name (clearer at the call site)
     name: str,
     email: str | None,
     phone: str | None,
@@ -33,11 +39,15 @@ def submit_feedback(
     ratings: tuple[int, int, int],
     source: str,
 ) -> tuple[Response, Alert | None]:
-    """Store a survey: find the customer, score it, raise an alert if unhappy, commit once."""
-    phone = phone.replace(" ", "") if phone else None
+    """Store a survey: find the customer, score it, raise an alert if unhappy, commit once.
+
+    Used by BOTH the web form (source="web") and SMS replies (source="sms"),
+    so scoring and alerts behave identically for both.
+    """
+    phone = phone.replace(" ", "") if phone else None  # "+254 712 ..." -> "+254712..."
     customer = _find_or_create_customer(db, name=name, email=email, phone=phone, kind=kind)
 
-    mean, category = classify(*ratings)
+    mean, category = classify(*ratings)  # the * unpacks the tuple into three arguments
     response = repository.save_response(
         db,
         Response(
@@ -50,6 +60,7 @@ def submit_feedback(
             source=source,
         ),
     )
+    # Only unhappy customers raise an alert (the brief's rule).
     alert = alert_service.create_for_detractor(db, response) if category == "detractor" else None
-    db.commit()  # customer, response and alert are saved together or not at all
+    db.commit()  # customer + response + alert are saved together, or not at all
     return response, alert

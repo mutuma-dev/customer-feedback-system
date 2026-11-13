@@ -1,6 +1,9 @@
-import "@testing-library/jest-dom/vitest"; // adds matchers like toBeInTheDocument()
+// Runs once before the tests start.
+
+// Adds extra checks such as expect(element).toBeInTheDocument().
+import "@testing-library/jest-dom/vitest";
 import { cleanup } from "@testing-library/react";
 import { afterEach } from "vitest";
 
-// Remove rendered components after every test so tests cannot affect each other.
+// After every test, remove what it rendered so tests cannot affect each other.
 afterEach(cleanup);

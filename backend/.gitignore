@@ -1,3 +1,4 @@
+# Never commit secrets, local environments or caches.
 .env
 __pycache__/
 .venv/

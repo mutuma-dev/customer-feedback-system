@@ -1,25 +1,28 @@
-"""Alembic environment: tells Alembic which database and which tables to manage."""
+"""Alembic environment: tells Alembic WHICH database and WHICH tables to manage."""
 
 from logging.config import fileConfig
 
 from sqlalchemy import engine_from_config, pool
 
 from alembic import context
-from app.alerts import models as alert_models  # noqa: F401  (registers the alerts table)
+
+# Importing the model modules registers their tables on Base.metadata.
+from app.alerts import models as alert_models  # noqa: F401
 from app.core.config import get_settings
 from app.core.database import Base
-from app.feedback import models as feedback_models  # noqa: F401  (registers customers/responses)
+from app.feedback import models as feedback_models  # noqa: F401
 
 config = context.config
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)
 
-# Use the same DATABASE_URL as the app. "%" must be doubled for the ini parser.
+# Use the SAME database address as the app (from .env). "%" must be doubled for this file format.
 config.set_main_option("sqlalchemy.url", get_settings().database_url.replace("%", "%%"))
 target_metadata = Base.metadata
 
 
 def run_migrations_offline() -> None:
+    """Generate SQL text without connecting to the database."""
     context.configure(
         url=config.get_main_option("sqlalchemy.url"),
         target_metadata=target_metadata,
@@ -30,6 +33,7 @@ def run_migrations_offline() -> None:
 
 
 def run_migrations_online() -> None:
+    """Connect to the database and apply migrations (the normal case)."""
     connectable = engine_from_config(
         config.get_section(config.config_ini_section, {}),
         prefix="sqlalchemy.",

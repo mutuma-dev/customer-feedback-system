@@ -1,3 +1,5 @@
+"""Tests for emailing and texting the care rep."""
+
 from app.alerts import notifications
 from app.alerts.models import Alert
 from app.core.config import Settings
@@ -6,6 +8,7 @@ from app.sms import client as sms_client
 
 
 def _make_alert(db_factory) -> int:
+    """Helper: put one customer + response + alert in the test database; return the alert id."""
     with db_factory() as db:
         customer = Customer(
             name="Amina Otieno", email="amina@example.com", phone=None, kind="buyer"
@@ -28,6 +31,7 @@ def _make_alert(db_factory) -> int:
 
 
 def test_email_body_contains_name_and_email():
+    # The brief says the alert must carry the customer's name and email.
     customer = Customer(name="Amina Otieno", email="amina@example.com", phone="+254700000000")
     response = Response(product_rating=1, care_rating=2, happy_rating=1, mean=1.33, source="web")
     body = notifications.build_alert_email(customer, response)
@@ -41,9 +45,11 @@ def test_send_email_without_smtp_only_logs(monkeypatch):
 
 
 def test_send_email_uses_starttls_login_and_send(monkeypatch):
-    calls = []
+    calls = []  # records every step so we can check the ORDER
 
     class FakeSMTP:
+        """A pretend mail server that only records what it is asked to do."""
+
         def __init__(self, host, port, timeout):
             calls.append(("connect", host, port))
 
@@ -81,6 +87,7 @@ def test_send_email_failure_returns_false(monkeypatch):
 
     monkeypatch.setattr(notifications, "get_settings", lambda: Settings(smtp_host="smtp.test"))
     monkeypatch.setattr(notifications.smtplib, "SMTP", broken)
+    # An email failure must be reported as False, never raised.
     assert notifications.send_email("care@x.com", "S", "B") is False
 
 
@@ -98,7 +105,7 @@ def test_dispatch_alert_records_what_was_delivered(db_factory, monkeypatch):
         alert = db.get(Alert, alert_id)
         assert alert.email_sent is True
         assert alert.sms_sent is True
-    assert texts[0][0] == "+254711111111"
+    assert texts[0][0] == "+254711111111"  # the SMS went to the care rep
     assert "Amina Otieno" in texts[0][1]
 
 
@@ -111,9 +118,9 @@ def test_dispatch_alert_without_care_phone_skips_sms(db_factory, monkeypatch):
 
     with db_factory() as db:
         alert = db.get(Alert, alert_id)
-        assert alert.email_sent is False
-        assert alert.sms_sent is False
+        assert alert.email_sent is False  # the failed email is recorded honestly
+        assert alert.sms_sent is False  # no phone configured -> no SMS
 
 
 def test_dispatch_unknown_alert_does_nothing(db_factory):
-    notifications.dispatch_alert(999, session_factory=db_factory)  # must not raise
+    notifications.dispatch_alert(999, session_factory=db_factory)  # must not raise an error

@@ -1,5 +1,13 @@
-"""AI touch: draft a polite follow-up for a detractor. Always fails gracefully.
-Works with ANY provider that offers the OpenAI "chat completions" read from env file
+"""AI touch: draft a polite follow-up email for an unhappy customer.
+
+Works with ANY provider that offers the OpenAI "chat completions" format (Groq, Google Gemini,
+OpenRouter ...). Switch provider by changing AI_BASE_URL, AI_MODEL and AI_API_KEY in `.env`.
+
+Rules from the brief that this file follows:
+  * the customer does nothing (this only runs when the care rep clicks "Write reply")
+  * a human stays in the loop (we only DRAFT; the rep edits and sends)
+  * it fails gracefully (any problem returns a template, never an error)
+  * the key stays on the server (called from Python, never from React)
 """
 
 import logging
@@ -10,6 +18,7 @@ from app.core.config import get_settings
 
 log = logging.getLogger(__name__)
 
+# The instructions given to the AI model.
 SYSTEM_PROMPT = (
     "You write short, warm, professional follow-up emails for the customer care team of "
     "Company X, a paint seller. The customer just gave low ratings. Apologise sincerely, "
@@ -20,7 +29,7 @@ SYSTEM_PROMPT = (
 
 
 def fallback_draft(first_name: str) -> str:
-    """Template used when no AI key is set or the AI call fails."""
+    """The built-in template used when there is no AI key or the AI call fails."""
     return (
         f"Hi {first_name},\n\n"
         "Thank you for your feedback. We're sorry your experience with Company X did not "
@@ -31,12 +40,17 @@ def fallback_draft(first_name: str) -> str:
 
 
 def draft_reply(name: str, product: int, care: int, happy: int) -> tuple[str, bool]:
-    """Return (draft text, ai_used). Only the first name and ratings leave our server."""
+    """Return (draft text, ai_used).
+
+    Privacy: only the FIRST NAME and the three ratings are sent to the AI provider.
+    The surname, email and phone number never leave our server.
+    """
     settings = get_settings()
     first_name = name.split()[0] if name.strip() else "there"
     if not settings.ai_api_key:
         return fallback_draft(first_name), False
 
+    # The "user message": the facts the AI should write about.
     prompt = (
         f"Customer first name: {first_name}\n"
         f"Product rating: {product}/5\nCustomer care rating: {care}/5\n"
@@ -48,19 +62,21 @@ def draft_reply(name: str, product: int, care: int, happy: int) -> tuple[str, bo
             headers={"Authorization": f"Bearer {settings.ai_api_key}"},
             json={
                 "model": settings.ai_model,
-                "max_tokens": 300,
-                "temperature": 0.4,
+                "max_tokens": 300,  # cap the length of the answer
+                "temperature": 0.4,  # low = calm and consistent wording
                 "messages": [
                     {"role": "system", "content": SYSTEM_PROMPT},
                     {"role": "user", "content": prompt},
                 ],
             },
-            timeout=settings.ai_timeout_seconds,
+            timeout=settings.ai_timeout_seconds,  # never wait longer than this
         )
         response.raise_for_status()
+        # The answer text lives at choices[0].message.content in this format.
         text = (response.json()["choices"][0]["message"]["content"] or "").strip()
         if text:
             return text, True
     except Exception:
         log.exception("AI draft failed; using template")
+    # No key, an error, a timeout or an empty answer all end up here.
     return fallback_draft(first_name), False

@@ -1,18 +1,19 @@
+// Tests for the donut and trend charts.
 import { render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 import { Donut, TrendChart } from "./Charts";
 
 describe("Donut", () => {
-  it("shows each group's count and the total", () => {
+  it("shows each group's count in plain words, with the brief's term in brackets", () => {
     render(<Donut detractors={2} passives={3} promoters={5} />);
     expect(screen.getByRole("img")).toHaveAttribute(
       "aria-label",
-      "Detractors 2, passives 3, promoters 5",
+      "Unhappy 2, neutral 3, happy 5",
     );
-    expect(screen.getByText("Detractors: 2")).toBeInTheDocument();
-    expect(screen.getByText("Passives: 3")).toBeInTheDocument();
-    expect(screen.getByText("Promoters: 5")).toBeInTheDocument();
-    expect(screen.getByText("10")).toBeInTheDocument(); // total in the middle
+    expect(screen.getByText("Unhappy (detractors): 2")).toBeInTheDocument();
+    expect(screen.getByText("Neutral (passives): 3")).toBeInTheDocument();
+    expect(screen.getByText("Happy (promoters): 5")).toBeInTheDocument();
+    expect(screen.getByText("10")).toBeInTheDocument(); // the total in the middle
   });
 
   it("draws one arc per group plus the grey track", () => {
@@ -39,13 +40,13 @@ describe("TrendChart", () => {
     expect(screen.getByText("No data yet.")).toBeInTheDocument();
   });
 
-  it("draws the real line and the dashed projection", () => {
+  it("draws the real line and the dashed forecast", () => {
     const { container } = render(<TrendChart points={points} projection={projection} />);
     expect(container.querySelectorAll("polyline")).toHaveLength(2);
     expect(container.querySelectorAll("polyline")[1]).toHaveAttribute("stroke-dasharray");
   });
 
-  it("omits the projection line when there is none", () => {
+  it("omits the forecast line when there is none", () => {
     const { container } = render(<TrendChart points={points} projection={[]} />);
     expect(container.querySelectorAll("polyline")).toHaveLength(1);
   });

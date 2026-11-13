@@ -1,7 +1,10 @@
+"""Tests for the dashboard endpoints: stats, trend, responses, drill-down."""
+
+
 def test_stats_on_empty_database_are_zero(client):
     stats = client.get("/api/stats").json()
     assert stats["total"] == 0
-    assert stats["avg_mean"] == 0.0
+    assert stats["avg_mean"] == 0.0  # zeros, not an error
 
 
 def test_stats_count_each_group_and_average(client, make_payload):
@@ -9,11 +12,11 @@ def test_stats_count_each_group_and_average(client, make_payload):
     client.post(
         "/api/feedback",
         json=make_payload(email="b@x.com", product_rating=3, care_rating=3, happy_rating=3),
-    )
+    )  # passive
     client.post(
         "/api/feedback",
         json=make_payload(email="c@x.com", product_rating=1, care_rating=1, happy_rating=1),
-    )
+    )  # detractor
     stats = client.get("/api/stats").json()
     assert (stats["total"], stats["promoters"], stats["passives"], stats["detractors"]) == (
         3,
@@ -29,7 +32,7 @@ def test_trend_groups_by_day(client, make_payload):
     client.post("/api/feedback", json=make_payload())
     client.post("/api/feedback", json=make_payload(email="b@x.com"))
     trend = client.get("/api/trend").json()
-    assert len(trend["points"]) == 1
+    assert len(trend["points"]) == 1  # both were submitted today = one day
     assert trend["points"][0]["count"] == 2
     assert trend["projection"] == []  # a projection needs two different days
 
@@ -40,11 +43,12 @@ def test_trend_rejects_bad_days(client):
 
 def test_responses_newest_first_with_customer(client, make_payload):
     client.post("/api/feedback", json=make_payload(name="First Person"))
+    # phone=None: a different phone number is needed, or it would count as the same customer.
     client.post(
         "/api/feedback", json=make_payload(name="Second Person", email="b@x.com", phone=None)
     )
     items = client.get("/api/responses").json()
-    assert [i["customer"]["name"] for i in items] == ["First Person", "Second Person"][::-1]
+    assert [i["customer"]["name"] for i in items] == ["Second Person", "First Person"]
 
 
 def test_responses_pagination(client, make_payload):

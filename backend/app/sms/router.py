@@ -1,4 +1,4 @@
-"""HTTP endpoints for SMS"""
+"""SMS endpoints (Spring: @RestController)."""
 
 from typing import Annotated
 
@@ -16,7 +16,11 @@ router = APIRouter(prefix="/api", tags=["sms"])
 
 @router.post("/sms/invite", response_model=SmsInviteOut)
 def sms_invite(payload: SmsInviteIn) -> SmsInviteOut:
-    """Send the "Rate us 1-5 ... Reply e.g. 4 5 4" invitation to a painter."""
+    """Send the "Rate us 1-5 ... Reply e.g. 4 5 4" invitation to a painter.
+
+    Nothing calls this automatically. In real life Company X's sales system would call it
+    after a purchase. For the demo you call it from the /docs page.
+    """
     phone = service.normalise_phone(payload.phone.replace(" ", ""))
     return SmsInviteOut(sent=sms_client.send_sms(phone, INVITE_TEXT))
 
@@ -25,11 +29,14 @@ def sms_invite(payload: SmsInviteIn) -> SmsInviteOut:
 def sms_incoming(
     background: BackgroundTasks,
     db: DbSession,
+    # Africa's Talking sends a FORM (not JSON) with fields named "from" and "text".
+    # "from" is a reserved word in Python, so we read it under another variable name.
     sender: Annotated[str, Form(alias="from")],
     body: Annotated[str, Form(alias="text")],
 ) -> dict[str, str]:
-    """Webhook for Africa's Talking: called whenever a painter replies to our SMS."""
+    """Webhook: Africa's Talking calls this URL whenever a painter replies to our SMS."""
     result = service.process_incoming(db, sender, body)
+    # Reply to the painter after we have answered Africa's Talking.
     background.add_task(sms_client.send_sms, result.phone, result.reply)
     if result.alert_id is not None:
         background.add_task(notifications.dispatch_alert, result.alert_id)

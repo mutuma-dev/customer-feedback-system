@@ -1,4 +1,4 @@
-"""HTTP endpoints the dashboard calls (Spring: @RestController)."""
+"""Endpoints the dashboard calls (Spring: @RestController)."""
 
 from typing import Annotated
 
@@ -14,13 +14,13 @@ router = APIRouter(prefix="/api", tags=["dashboard"])
 
 @router.get("/stats", response_model=StatsOut)
 def stats(db: DbSession) -> StatsOut:
-    """Headline numbers: total, split and averages."""
+    """Headline numbers: total, the three groups and the averages."""
     return service.get_stats(db)
 
 
 @router.get("/trend", response_model=TrendOut)
 def trend(db: DbSession, days: Annotated[int, Query(ge=1, le=365)] = 30) -> TrendOut:
-    """Daily average score for the last N days plus a 7-day projection."""
+    """Daily average score for the last N days (1-365) plus a 7-day projection."""
     return service.get_trend(db, days)
 
 
@@ -30,10 +30,11 @@ def list_responses(
     limit: Annotated[int, Query(ge=1, le=200)] = 50,
     offset: Annotated[int, Query(ge=0)] = 0,
 ):
-    """Newest first. Each item includes the customer, so the dashboard can drill down."""
+    """Newest first. Each item includes the customer, so the dashboard can show details."""
     return service.list_responses(db, limit, offset)
 
 
 @router.get("/responses/{response_id}", response_model=ResponseOut)
 def get_response(response_id: int, db: DbSession):
+    """One response (404 if the id does not exist)."""
     return service.get_response(db, response_id)
