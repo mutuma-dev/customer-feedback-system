@@ -23,7 +23,6 @@ def send_sms(to: str, message: str) -> bool:
     """
     settings = get_settings()
     if not settings.at_api_key:
-        # Not configured: just show what would have been sent (handy during development).
         log.info("SMS not configured; would send to %s: %s", to, message)
         return False
 
