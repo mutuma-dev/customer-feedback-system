@@ -12,7 +12,7 @@ class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
     # Database
-    database_url: str = "postgresql+psycopg://postgres:postgres@localhost:5432/feedback"
+    database_url: str = ""
 
     # Which website origins may call the API from a browser (CORS), comma separated.
     frontend_origin: str = "http://localhost:3000"
