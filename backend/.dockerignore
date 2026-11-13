@@ -1,0 +1,9 @@
+.venv
+.env
+__pycache__
+.pytest_cache
+.ruff_cache
+# tests stay out of the production image
+**/test_*.py
+conftest.py
+pytest.ini

@@ -1,0 +1,45 @@
+# Optional: run everything in containers. (If you use your own local PostgreSQL, skip this.)
+#   docker compose up --build
+# Frontend http://localhost:3000   API http://localhost:8000/docs   Postgres localhost:5433
+services:
+  db:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: feedback
+    ports:
+      - "5433:5432" # 5433 on your machine so it does not clash with a local PostgreSQL on 5432
+    volumes:
+      - dbdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d feedback"]
+      interval: 5s
+      retries: 10
+
+  backend:
+    build: ./backend
+    environment:
+      DATABASE_URL: postgresql+psycopg://postgres:postgres@db:5432/feedback
+      FRONTEND_ORIGIN: http://localhost:3000
+    env_file:
+      - path: ./backend/.env
+        required: false
+    ports:
+      - "8000:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        NEXT_PUBLIC_API_URL: http://localhost:8000
+    ports:
+      - "3000:3000"
+    depends_on:
+      - backend
+
+volumes:
+  dbdata:

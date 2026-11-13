@@ -1,0 +1,157 @@
+# ONE workflow file for the whole repo (backend + frontend + deploy).
+#   CI  = runs on every push and pull request: lint, test, build
+#   CD  = runs only after a push to main: scan, migrate, staging, production (manual approval)
+name: ci-cd
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch: # adds a "Run workflow" button in the Actions tab
+
+# If you push again while a run is in progress on the same branch, cancel the old run.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+# Least privilege: jobs may only read the repository unless they ask for more.
+permissions:
+  contents: read
+
+jobs:
+  # ------------------------------------------------------------------ CI: backend
+  backend:
+    name: backend (python ${{ matrix.python-version }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false # a failure on one Python version does not cancel the other
+      matrix:
+        python-version: ["3.12", "3.14"]
+    defaults:
+      run:
+        working-directory: backend
+    services:
+      postgres: # a real PostgreSQL next to the job, used to prove the migrations work
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: feedback
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      DATABASE_URL: postgresql+psycopg://postgres:postgres@localhost:5432/feedback
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: pip # re-use downloaded packages between runs
+          cache-dependency-path: backend/requirements*.txt
+      - name: Install dependencies
+        run: pip install -r requirements-dev.txt
+      - name: Lint (Ruff)
+        run: ruff check . && ruff format --check .
+      - name: Migrations apply, undo and re-apply on PostgreSQL
+        run: alembic upgrade head && alembic downgrade base && alembic upgrade head
+      - name: Test (pytest)
+        run: pytest -q --junitxml=test-results.xml
+      - name: Keep the test report
+        if: always() # upload even when tests fail, so you can read the report
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-test-results-py${{ matrix.python-version }}
+          path: backend/test-results.xml
+
+  # ------------------------------------------------------------------ CI: frontend
+  frontend:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - run: npm ci # exact versions from package-lock.json
+      - name: Lint (ESLint)
+        run: npm run lint
+      - name: Type check (TypeScript)
+        run: npx tsc --noEmit
+      - name: Test (Vitest)
+        run: npm test
+      - name: Build
+        run: npm run build
+
+  # ------------------------------------------------------------------ CI: Docker images
+  images:
+    needs: [backend, frontend] # only runs if both jobs above are green
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: docker compose config -q # validates docker-compose.yml
+      - run: docker build -t feedback-backend ./backend
+      - run: docker build -t feedback-frontend ./frontend
+
+  # ------------------------------------------------------------------ CD: only on main
+  scan:
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    needs: images
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # full history so secrets hidden in old commits are found too
+      - name: Secret scan
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Python dependency vulnerabilities
+        run: pip install pip-audit && pip-audit -r backend/requirements.txt
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Node dependency vulnerabilities
+        run: npm audit --omit=dev --audit-level=high
+        working-directory: frontend
+
+  migrate:
+    needs: scan
+    runs-on: ubuntu-latest
+    environment: staging # secrets for this environment are configured in GitHub settings
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -r backend/requirements.txt
+      - name: Apply database migrations to staging
+        run: alembic upgrade head
+        working-directory: backend
+        env:
+          DATABASE_URL: ${{ secrets.STAGING_DATABASE_URL }}
+
+  deploy-staging:
+    needs: migrate
+    runs-on: ubuntu-latest
+    environment: staging
+    steps:
+      # TODO: replace with your host's deploy command (Render, Railway, Fly.io, SSH to a VPS ...).
+      - run: echo "Deploy backend and frontend images to STAGING here"
+
+  deploy-production:
+    needs: deploy-staging
+    runs-on: ubuntu-latest
+    # In GitHub: Settings > Environments > production > "Required reviewers".
+    # The job pauses until a reviewer approves. That is the manual approval gate.
+    environment: production
+    steps:
+      - run: echo "Deploy backend and frontend images to PRODUCTION here"
